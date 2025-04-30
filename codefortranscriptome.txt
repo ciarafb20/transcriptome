@@ -1,0 +1,93 @@
+# Created a conda environment with the following code: 
+conda create -n transcriptomics -c bioconda hisat2 samtools stringtie 
+gffcompare 
+
+# Activated the environment with the following code: 
+conda activate transcriptomics
+
+# Decompressed my files with the following code:
+gunzip fastq/*.gz 
+
+# Created index files with the following code: 
+hisat2-build paeruginosa.fna paeru 
+
+# Aligned index for each pair of reads with the following code:
+	# (1 of 4) 
+	hisat2 -q -x paeru -1 fastq/biofilm01_F.fastq -2 
+fastq/biofilm01_R.fastq -S biofilm01.sam 
+	# (2 of 4) 
+	hisat2 -q -x paeru -1 fastq/biofilm02_F.fastq -2 
+fastq/biofilm02_R.fastq -S biofilm02.sam 
+	# (3 of 4) 
+	hisat2 -q -x paeru -1 fastq/plank01_F.fastq -2 
+fastq/plank01_R.fastq -S plank01.sam 
+	# (4 of 4) 
+	hisat2 -q -x paeru -1 fastq/plank02_F.fastq -2 
+fastq/plank02_R.fastq -S plank02.sam 
+	
+# Created bam files for each sam filed with the following code:
+	# (1 of 4) 
+	samtools view -bS biofilm01.sam > biofilm01.bam
+	# (2 of 4) 
+	samtools view -bS biofilm02.sam > biofilm02.bam
+	# (3 of 4) 
+	samtools view -bS plank01.sam > plank01.bam
+	# (4 of 4) 
+	samtools view -bS plank02.sam > plank02.bam
+
+# Organized each transcript in the correct order with the following code: 
+	# (1 of 4) 
+	samtools sort biofilm01.bam -o biofilm01.sorted.bam
+	# (2 of 4) 
+	samtools sort biofilm02.bam -o biofilm02.sorted.bam
+	# (3 of 4) 
+	samtools sort plank01.bam -o plank01.sorted.bam
+	# (4 of 4) 
+	samtools sort plank02.bam -o plank02.sorted.bam
+
+# Assembled sorted files into transcripts with the following code: 
+	# (1 of 4) 
+	stringtie biofilm01.sorted.bam -G paeruginosa.gff -o 
+stringtie/biofilm01.transcripts.gtf
+	# (2 of 4) 
+	stringtie biofilm02.sorted.bam -G paeruginosa.gff -o 
+stringtie/biofilm02.transcripts.gtf
+	# (3 of 4) 
+	stringtie plank01.sorted.bam -G paeruginosa.gff -o 
+stringtie/plank01.transcripts.gtf
+	# (4 of 4) 
+	stringtie plank02.sorted.bam -G paeruginosa.gff -o 
+stringtie/plank02.transcripts.gtf 
+
+# Created assemblies.txt file with the following pathways:
+	# (1 of 4) stringtie/biofilm01.transcripts.gtf
+	# (2 of 4) stringtie/biofilm02.transcripts.gtf
+	# (3 of 4) stringtie/plank01.transcripts.gtf
+	# (4 of 4) stringtie/plank02.transcripts.gtf 
+
+# Merged all transcript fles into one with the following code:
+stringtie --merge -G paeruginosa.gff -o stringtie_merged.gtf 
+assemblies.txt 
+
+# Merged all transcript fles into one with the following code:
+cat stringtie_merged.gtf | grep -v "^#" | awk '$3=="transcript" {print}' | 
+wc -l
+
+# There are 5737 transcripts. 
+
+# Compared annotated transcripts to a known annotation:
+gffcompare -r paeruginosa.gff -G -o merged stringtie_merged.gtf 
+
+# Visualized the merged stats:
+cat merged.stats
+
+# Prepared each of the files for working in R:
+	# (1 of 4) stringtie -e -B -p 8 -G stringtie_merged.gtf -o 
+ballgown/biofilm01/biofilm01.gtf biofilm01.sorted.bam
+	# (2 of 4) stringtie -e -B -p 8 -G stringtie_merged.gtf -o 
+ballgown/biofilm02/biofilm02.gtf biofilm02.sorted.bam
+	# (3 of 4) stringtie -e -B -p 8 -G stringtie_merged.gtf -o 
+ballgown/plank01/plank01.gtf plank01.sorted.bam
+	# (4 of 4) stringtie -e -B -p 8 -G stringtie_merged.gtf -o 
+ballgown/plank02/plank02.gtf plank02.sorted.bam 
+
